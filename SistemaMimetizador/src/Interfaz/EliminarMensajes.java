@@ -1,8 +1,15 @@
 package Interfaz;
 
 //Importa todas las librerias a utilizar
+import Controladores.Lector; //Se importa Lector de controladores porque se llamara cuando se cree un mensaje.
+import java.awt.Color; //Libreria para asignar colores a los componentes.
+import java.awt.Graphics; //Libreria que permite dibujar en el panel.
+import java.awt.Image; //Se utiliza para agregar imagenes.
 import java.awt.event.ActionEvent; //Se declara para manejar eventos.
 import java.awt.event.ActionListener; //Se declara para manejar eventos de tipo Action.
+import java.net.URL; //Indica la URL donde se encuentra la imagen.
+import java.util.ArrayList; //Se usa para trabajar con lista de elementos.
+import javax.swing.ImageIcon; //Permite agregar un icono de imagen.
 import javax.swing.JButton; //Se agrega para poder trabajar con JButton.
 import javax.swing.JFrame; //Se agrega para poder trabajar con JFrame.
 import javax.swing.JOptionPane; //Se agrega para poder trabajar con mensajes emergentes(JOptionPAne).
@@ -18,6 +25,8 @@ public class EliminarMensajes extends JPanel {
     private final JButton ELIMINAR; //Para eliminar el mensaje en donde se encuentre posicionado.
     private final JFrame VENTANA; //Frame donde se agregara el panel.
     private final JPanel PANEL; //Para usar el panel en la clase Eventos
+    private final URL DIRECCION_URL = getClass().getResource("/Img/fondo1.jpg"); //Se declara la ruta donde se encuentra la imagen que se agregara al panel.
+    private final Image IMAGEN = new ImageIcon(DIRECCION_URL).getImage();  //Declara la imagen con la URL especificada anteriormente.
     private byte contador; //Sirve para avanzar y retroceder entre los mensajes.
     private ArrayList mensajes; //Aqui se almacenaran los mensajes leidos desde la clase Leer para mostrarlos en el area de texto.
 
@@ -61,8 +70,19 @@ public class EliminarMensajes extends JPanel {
         leerMensajes(); //Va al metodo privado para leer los mensajes.
     }
 
+    @Override
+    public void paint(Graphics g) { //Agrega la imagen al panel
+        g.drawImage(IMAGEN, 0, 0, getWidth(), getHeight(), this); //Agrega la imagen al panel.
+        setOpaque(false);
+        super.paint(g);
+    }
+
     private void leerMensajes() { //Este metodo sirve 
-       System.out.println("Estoy leyendo");
+        Lector leer = new Lector(); 
+        mensajes = leer.leer(); //Devuelve un arrayList y se lo asigna al ArrayList de mensajes.
+        if (mensajes.size() > 0) { //Verifica que si haya mandando un ArrayList con elementos en caso contrario no hace nada.
+            AREA_TEXTO.setText((String) mensajes.get(0)); //Muestra en principio el primer mensaje en el area de texto.
+        }
     }
 
     class EventosEliminar implements ActionListener { //Crea una clase interna para manejar los eventos de la clase EliminarMensajes.
@@ -94,6 +114,18 @@ public class EliminarMensajes extends JPanel {
                     } else { //Si no es ninguna opcion anterior entra al else que significa que desea eliminar un mensaje.
                         if (!mensajes.isEmpty()) { //Verifica que aun existan mensajes a eliminar.
                             if (JOptionPane.showConfirmDialog(null, "Estas seguro que desesas eliminar el mensaje") == 0) { //si esta seguro de eliminar entra.
+                                Lector sobreescribir = new Lector(); //Llama al metodo Lector del paquete Controlador.
+                                sobreescribir.sobreescribir((String) mensajes.get(contador)); //Accede al metodo sobreescribir y le pasa el mensaje que sera tratado en dicha clase.
+                                mensajes.remove(contador);//Elimina el mensaje
+                                mensajes.remove(contador);//Elimina la fecha y hora en que se creo el mensaje.
+                                byte a = contador; //Guarda el valor de contador.
+                                contador = (byte) ((contador == mensajes.size()) ? (a - 2) : a); //Si contador es la ultimima posicion entonces lo disminuye en dos y si no es asi lo deja en la misma posicion.
+                                if (mensajes.isEmpty()) { //Si mensaje ya se encuentra vacion no debe mostrar nada en el area de texto.
+                                    contador = 0;
+                                    AREA_TEXTO.setText("");
+                                } else { //En caso contrario muestra la posicion de contador.
+                                    AREA_TEXTO.setText((String) mensajes.get(contador));
+                                }
                                 JOptionPane.showMessageDialog(null, "Mensaje eliminado");
                             }
                         } else {//Si la lista esta vacia indica que no hay mensajes que eliminar.

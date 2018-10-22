@@ -1,8 +1,14 @@
 package Interfaz;
 
 //Importa todas las librerias a utilizar
+import Controladores.Lector; //Se importa Lector de controladores porque se llamara cuando se cree un mensaje.
+import java.awt.Color; //Libreria para asignar colores a los componentes.
+import java.awt.Graphics; //Libreria que permite dibujar en el panel.
+import java.awt.Image; //Se utiliza para agregar imagenes.
 import java.awt.event.ActionEvent; //Se declara para manejar eventos.
 import java.awt.event.ActionListener; //Se declara para manejar eventos de tipo Action.
+import java.net.URL; //Indica la URL donde se encuentra la imagen.
+import javax.swing.ImageIcon; //Permite agregar un icono de imagen.
 import javax.swing.JButton; //Se agrega para poder trabajar con JButton.
 import javax.swing.JFrame; //Se agrega para poder trabajar con JFrame.
 import javax.swing.JOptionPane; //Se agrega para poder trabajar con mensajes emergentes(JOptionPAne).
@@ -16,6 +22,8 @@ public class CrearMensajes extends JPanel { //Se indica que esta clase heredara 
     private final JButton CREAR; //Boton para Crear un nuevo mensaje.
     private final JFrame VENTANA; //Indica donde se agregara el panel.
     private final JPanel PANEL; //Para usar el panel en la clase Eventos.
+    private final URL DIRECCION_URL = getClass().getResource("/Img/fondo1.jpg"); //Se declara la ruta donde se encuentra la imagen que se agregara al panel.
+    private final Image IMAGEN = new ImageIcon(DIRECCION_URL).getImage(); //Declara la imagen con la URL especificada anteriormente.
 
     public CrearMensajes(JFrame ventana) {
         PANEL = this;
@@ -41,6 +49,12 @@ public class CrearMensajes extends JPanel { //Se indica que esta clase heredara 
         add(CREAR); //Añade el boton al panel.
     }
 
+    public void paint(Graphics g) { //Agrega la imagen al panel
+        g.drawImage(IMAGEN, 0, 0, getWidth(), getHeight(), this); //Agrega la imagen al panel.
+        setOpaque(false);
+        super.paint(g);
+    }
+
     class EventosCrear implements ActionListener { //Crea una clase interna para manejar los eventos de la clase CrearMensajes.
 
         @Override
@@ -52,6 +66,8 @@ public class CrearMensajes extends JPanel { //Se indica que esta clase heredara 
                     if (mensaje.length() == 0) {
                         JOptionPane.showMessageDialog(null, "No se puede crear un mensaje vacio"); //Verifica que el mensaje no este vacio.
                     } else {
+                        Lector escribir = new Lector(); //Llama al Lector del paquete Controladores.
+                        escribir.escribir(mensaje); //Le pasa el mensaje para que el metodo de escribir se haga cargo de el.
                         JOptionPane.showMessageDialog(null, "Mensaje creado");
                         //Una vez que termina el proceso vuelve al menu principal.
                         VENTANA.remove(PANEL);

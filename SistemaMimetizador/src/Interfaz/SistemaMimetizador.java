@@ -6,5 +6,6 @@ public class SistemaMimetizador {
 
     public static void main(String[] args) { //Main de nuestra aplicacion.
         Ventana ventana = new Ventana(); //Se crea la ventana que sera nuestro Frame.
+        Conexion conectar = new Conexion(1); //Crea la conexion con el arduino para cuando se necesite mandarle información.
     }
 }
