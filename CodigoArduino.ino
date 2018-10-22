@@ -1,12 +1,25 @@
 //--------------------------------------------------------------------LIBRERIAS A UTILIZAR.
 
 #include <LiquidCrystal.h> //Libreria para utilizar el display LCD.
+#include <DHT.h> //Incluye librería de control del sensor.
+
 
 //-------------------------------------------------------------------DECLARACIÓN DE VARIABLES.
 
 //----------Variables para el LCD
 LiquidCrystal lcd(13, 12, 11, 10, 9, 8); //Se indican los pines que esta utilizando el LCD.
 const char CARACTERES[95] = {' ','!','"','#','$','%','&',' ','(',')','*','+',',','-','.','/','0','1','2','3','4','5','6','7','8','9',':',';','<','=','>','?','@','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','[',' ',']','^','_','`','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','{','|','}','~'}; //Se define el alfabeto para convertir una entrada numerica a el valor que representa.
+
+
+//----------Variables para el SENSOR y FOTORESISTENCIA
+#define DHTPIN 52 //Defiene el pin al que se conectará el sensor.
+#define LDR_pin A0 //Define la entrada analogica para la fotorresistencia.
+#define DHTTYPE DHT11 //Seleciona el tipo de sensor a utilizar.
+DHT dht(DHTPIN, DHTTYPE); //Configura la librería pasando como parametros el pin y tipo de sensor.
+int temperatura = 0; //Declara la variable que almacenara la temperatura.
+int humedad = 0; //Declara la variable que almacenara la humedad.
+int luminosidad = 0; //Declara la variable que almacenara la luminosidad.
+
 
 //----------Variables para ARREGLOS DINAMICOS
 boolean mostrarLista=false; //Determina en que momento se empiezan a visualizar los mensajes en el LCD.
@@ -16,6 +29,16 @@ size_t capacidad; //Variable para saber el tamaño de la lista.
 String mensaje=""; //Variable utilizada para almacenar los caracteres que formaran un mensaje.
 String* lista; //Declara un arreglo que servira para almacenar todos los mensajes.
 
+
+//----------Variables para BOTONES DE ANTERIOR Y SIGUIENTE.
+const int boton1=20; //Declara el pin 20 para el boton 1
+const int boton2=21; //Declara el pin 21 para el boton 2
+boolean estadoB1=false; //Verifica si el boton 1 esta presionado o no.
+boolean estadoB2=false; //Verifica si el boton 2 esta presionado o no.
+volatile boolean estadoAnterior= false; //Se define como volatile para poder modificar su valor en la interrupción cuyo valor cambiara a true cuando entre a la interrupción.
+volatile boolean estadoSiguiente= false; //Se define como volatile para poder modificar su valor en la interrupción cuyo valor cambiara a true cuando entre a la interrupción.
+
+
 //--------------------------------------------------------------------------SETUP
 
 void setup(){
@@ -24,10 +47,32 @@ void setup(){
   lcd.begin(16, 2); //Se inicia el LCD.
   Serial.begin(9600); //Se inicia la comunicación serial en 9600.
   
+  dht.begin();//Inicializa la libreria DHT
+  pinMode(LDR_pin,INPUT); //Establece que el LDR sera de entrada.
+  
   crearLista(100); //Crea la lista con un valor por defecto de 100.
+
+  pinMode(boton1, INPUT_PULLUP); //Establece la entrada del boton 1.
+  pinMode(boton2, INPUT_PULLUP); //Establece la entrada del boton 2.
+  attachInterrupt(digitalPinToInterrupt(boton1),anterior,LOW); //Se declara una interrupcion en el pin 20 que llamara la ISR anterior.
+  attachInterrupt(digitalPinToInterrupt(boton2),siguiente,LOW); //Se declara una interrupcion en el pin 21 que llamara la ISR siguiente.
 }
 
+
+//----------------------------------------------------------------------------LOOP
+
 void loop(){
+  if(digitalRead(boton1)==HIGH and estadoAnterior==true){ //Si el boton1 no esta precionado y ya hubo una interrupción entra en el if. 
+    posicion=posicion-2; //Como posicion ya incremento en uno y se desea retroceder de donde anteriormente estaba se restan 2.
+    if(posicion<0){ //Para evitar acceder a una posicion que no existe.
+	  posicion=cont-1;
+    }
+    estadoAnterior=false; //Regrese el estado a false indicando que ya se trato la interrupcion.
+  }else{
+    if(digitalRead(boton2)==HIGH and estadoSiguiente==true){ //Si el boton1 no esta precionado y ya hubo una interrupción entra en el if. 
+       estadoSiguiente=false; //Regresa el estado a false indicando que ya se trato la interrupcion.
+    }  
+  }
   while (Serial.available() > 0) { //Indica que miesntras haya caracteres en el Serial por leer se repita.
     delay(1); //Espera un poco en dado caso que sean demasiados caracteres y los pueda leer todos.
     int c = (Serial.read()); //Almacena el caracter leido en c.
@@ -79,6 +124,13 @@ void loop(){
 	delay(3000); //Se espera 3 segundos.
 		if(posicion==(cont-1)){ //Sirve para mostrar la humedad, temperatura y luminosidad.
 			posicion=0;
+			humedad = dht.readHumidity();// Lee la humedad.
+			temperatura = dht.readTemperature();//Lee la temperatura.
+			luminosidad=analogRead(LDR_pin); //Lee la luminosidad.
+			lcd.clear(); //Se limpia el LCD
+			lcd.setCursor(0,0); //Se posiciona en el renglon 1
+			lcd.print(String("T:")+temperatura+String("C H:")+humedad+String("% L:")+luminosidad); //Imprime la humedad, temperatura y luminosidad.
+			delay(3000); //Se espera 3 segundos.
 		}else{
 		  posicion++; //En caso contrario que no sea la ultima posicion simplemente aumenta en 1.
 		}
@@ -133,4 +185,17 @@ void rescalar(size_t nuevaCapacidad){
 char Decimal_a_ASCII(int entrada){
   entrada=entrada-32;
   return CARACTERES[entrada];
+}
+
+/*
+	Ambas funciones "anterior()" y "siguiente()" asignar el valor true a su respectiva variable para indicar que ya hubo una interrupcion y asi el programa
+	pueda mostrar el anterior o siguiente valor en la lista.
+*/
+
+void anterior(){
+  estadoAnterior=true;
+}
+
+void siguiente(){
+  estadoSiguiente=true;
 }
